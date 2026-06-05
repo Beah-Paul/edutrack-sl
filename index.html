@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EduTrack SL — School Management System</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#1a3a5c"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --navy: #1a3a5c;
+    --navy-light: #24527a;
+    --accent: #f0a500;
+    --accent-light: #ffd166;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --blue: #3498db;
+    --purple: #9b59b6;
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --text: #1a2535;
+    --muted: #6b7a8d;
+    --border: #e2e8f0;
+    --sidebar-w: 220px;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; font-size: 14px; }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: var(--sidebar-w); background: var(--navy); color: #fff;
+    display: flex; flex-direction: column; flex-shrink: 0;
+    transition: width 0.3s; overflow: hidden; z-index: 100;
+  }
+  #sidebar.collapsed { width: 60px; }
+  .sidebar-logo {
+    padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; color: var(--navy); flex-shrink: 0; }
+  .logo-text { font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .logo-sub { font-size: 10px; color: rgba(255,255,255,0.5); white-space: nowrap; }
+  .nav-section { padding: 12px 8px 4px; font-size: 10px; font-weight: 600;
+    color: rgba(255,255,255,0.35); letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+  #sidebar.collapsed .nav-section { opacity: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border-radius: 8px; margin: 1px 6px; cursor: pointer; transition: all 0.15s;
+    font-size: 13px; font-weight: 400; white-space: nowrap; color: rgba(255,255,255,0.75);
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .nav-item.active { background: var(--accent); color: var(--navy); font-weight: 600; }
+  .nav-icon { font-size: 16px; flex-shrink: 0; width: 20px; text-align: center; }
+  .nav-label { white-space: nowrap; }
+  #sidebar.collapsed .nav-label { display: none; }
+  .sidebar-footer { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .toggle-btn { background: rgba(255,255,255,0.08); border: none; color: #fff; cursor: pointer;
+    width: 100%; padding: 8px; border-radius: 6px; font-size: 16px; }
+
+  /* MAIN */
+  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  #topbar {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 0 20px; height: 56px; display: flex; align-items: center;
+    justify-content: space-between; flex-shrink: 0;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .page-title { font-size: 16px; font-weight: 600; color: var(--text); }
+  .breadcrumb { font-size: 12px; color: var(--muted); }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .status-online { background: #d4edda; color: #155724; }
+  .status-offline { background: #f8d7da; color: #721c24; }
+  .sync-btn-top { background: var(--navy); color: #fff; border: none; padding: 6px 14px;
+    border-radius: 6px; cursor: pointer; font-size: 12px; font-family: var(--font); }
+
+  /* CONTENT */
+  #content { flex: 1; overflow-y: auto; padding: 20px; }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* STAT CARDS */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: var(--card); border-radius: 10px; padding: 14px 16px;
+    border: 1px solid var(--border); }
+  .stat-label { font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 26px; font-weight: 600; line-height: 1; }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .stat-icon { float: right; font-size: 22px; opacity: 0.15; }
+
+  /* TABLES */
+  .card { background: var(--card); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 16px; }
+  .card-header { padding: 14px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 14px; font-weight: 600; }
+  .card-body { padding: 16px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 10px;
+    border-bottom: 1px solid var(--border); background: #fafbfc; }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+
+  /* FORMS */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 500; color: var(--muted); }
+  input, select, textarea {
+    border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
+    font-family: var(--font); font-size: 13px; color: var(--text);
+    background: #fff; transition: border 0.15s; width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--navy); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  /* BUTTONS */
+  .btn { padding: 8px 16px; border-radius: 7px; border: none; cursor: pointer;
+    font-family: var(--font); font-size: 13px; font-weight: 500; transition: all 0.15s; }
+  .btn-primary { background: var(--navy); color: #fff; }
+  .btn-primary:hover { background: var(--navy-light); }
+  .btn-accent { background: var(--accent); color: var(--navy); }
+  .btn-accent:hover { background: var(--accent-light); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; border-radius: 5px; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { background: var(--bg); }
+
+  /* BADGES */
+  .badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-green { background: #d4edda; color: #155724; }
+  .badge-red { background: #f8d7da; color: #721c24; }
+  .badge-yellow { background: #fff3cd; color: #856404; }
+  .badge-blue { background: #cce5ff; color: #004085; }
+  .badge-purple { background: #e2d9f3; color: #4a1878; }
+
+  /* ATTENDANCE GRID */
+  .att-grid { display: flex; gap: 6px; flex-wrap: wrap; }
+  .att-btn { width: 36px; height: 36px; border-radius: 6px; border: 1.5px solid var(--border);
+    cursor: pointer; font-size: 11px; font-weight: 600; background: #fff; transition: all 0.15s; }
+  .att-btn.present { background: var(--green); border-color: var(--green); color: #fff; }
+  .att-btn.absent { background: var(--red); border-color: var(--red); color: #fff; }
+  .att-btn.late { background: var(--accent); border-color: var(--accent); color: var(--navy); }
+
+  /* PROGRESS BAR */
+  .progress-wrap { background: var(--border); border-radius: 10px; height: 8px; overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: 10px; transition: width 0.4s; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .tab { padding: 8px 14px; cursor: pointer; font-size: 13px; color: var(--muted);
+    border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 500; }
+  .tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+  /* NOTIFICATION TOAST */
+  #toast { position: fixed; bottom: 20px; right: 20px; background: var(--navy); color: #fff;
+    padding: 10px 18px; border-radius: 8px; font-size: 13px; z-index: 9999;
+    transform: translateY(60px); opacity: 0; transition: all 0.3s; pointer-events: none; }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    z-index: 500; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--card); border-radius: 12px; padding: 24px; width: 90%; max-width: 480px;
+    max-height: 90vh; overflow-y: auto; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .modal-title { font-size: 16px; font-weight: 600; }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); }
+
+  /* SEARCH */
+  .search-bar { position: relative; }
+  .search-bar input { padding-left: 32px; }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; }
+
+  /* DASHBOARD CHART */
+  .mini-chart { display: flex; align-items: flex-end; gap: 4px; height: 50px; }
+  .chart-bar { flex: 1; background: var(--navy); border-radius: 3px 3px 0 0; min-height: 4px; opacity: 0.7; transition: opacity 0.15s; }
+  .chart-bar:hover { opacity: 1; }
+
+  /* GRADE INPUT */
+  .grade-input { width: 60px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    #sidebar { width: 60px; }
+    #sidebar .nav-label, #sidebar .logo-text, #sidebar .logo-sub, #sidebar .nav-section { display: none; }
+    .form-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+  .flex { display: flex; }
+  .gap-8 { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .mb-12 { margin-bottom: 12px; }
+  .mb-16 { margin-bottom: 16px; }
+  .text-muted { color: var(--muted); font-size: 12px; }
+  .text-right { text-align: right; }
+  .fw-600 { font-weight: 600; }
+  .color-green { color: var(--green); }
+  .color-red { color: var(--red); }
+  .color-accent { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">E</div>
+    <div>
+      <div class="logo-text">EduTrack SL</div>
+      <div class="logo-sub">School Management</div>
+    </div>
+  </div>
+
+  <div class="nav-section">Main</div>
+  <div class="nav-item active" onclick="showPage('dashboard')">
+    <span class="nav-icon">📊</span><span class="nav-label">Dashboard</span>
+  </div>
+  <div class="nav-item" onclick="showPage('students')">
+    <span class="nav-icon">👨‍🎓</span><span class="nav-label">Students</span>
+  </div>
+  <div class="nav-item" onclick="showPage('attendance')">
+    <span class="nav-icon">✅</span><span class="nav-label">Attendance</span>
+  </div>
+  <div class="nav-item" onclick="showPage('grades')">
+    <span class="nav-icon">📝</span><span class="nav-label">Exam Grades</span>
+  </div>
+  <div class="nav-item" onclick="showPage('fees')">
+    <span class="nav-icon">💰</span><span class="nav-label">Fee Payments</span>
+  </div>
+
+  <div class="nav-section">Admin</div>
+  <div class="nav-item" onclick="showPage('teachers')">
+    <span class="nav-icon">👩‍🏫</span><span class="nav-label">Teachers</span>
+  </div>
+  <div class="nav-item" onclick="showPage('reports')">
+    <span class="nav-icon">📈</span><span class="nav-label">Reports</span>
+  </div>
+  <div class="nav-item" onclick="showPage('notifications')">
+    <span class="nav-icon">🔔</span><span class="nav-label">Notifications</span>
+  </div>
+  <div class="nav-item" onclick="showPage('settings')">
+    <span class="nav-icon">⚙️</span><span class="nav-label">Settings</span>
+  </div>
+
+  <div style="padding:0 6px 6px">
+    <a href="student-portal.html" style="text-decoration:none">
+      <div class="nav-item" style="background:rgba(240,165,0,0.15);color:var(--accent)">
+        <span class="nav-icon">🎓</span><span class="nav-label">Student Portal</span>
+      </div>
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <div class="topbar-left">
+      <div>
+        <div class="page-title" id="pageTitle">Dashboard</div>
+        <div class="breadcrumb" id="pageBreadcrumb">Overview</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="status-badge status-online" id="statusBadge">● Online</span>
+      <button class="sync-btn-top" onclick="syncAll()">↑↓ Sync</button>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon">👨‍🎓</span>
+          <div class="stat-label">Total Students</div>
+          <div class="stat-value" id="dash-students">0</div>
+          <div class="stat-sub">Enrolled this term</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">✅</span>
+          <div class="stat-label">Attendance Today</div>
+          <div class="stat-value color-green" id="dash-att">—</div>
+          <div class="stat-sub">Present rate</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">💰</span>
+          <div class="stat-label">Fees Collected</div>
+          <div class="stat-value color-accent" id="dash-fees">Le 0</div>
+          <div class="stat-sub">This term</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">👩‍🏫</span>
+          <div class="stat-label">Teachers</div>
+          <div class="stat-value" id="dash-teachers">0</div>
+          <div class="stat-sub">Active staff</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recent Students</span>
+            <button class="btn btn-sm btn-outline" onclick="showPage('students')">View all</button>
+          </div>
+          <div id="dash-recent-students" style="padding:8px">
+            <div class="text-muted" style="padding:8px">No students yet</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Fee Status</span>
+          </div>
+          <div class="card-body" id="dash-fee-status">
+            <div class="text-muted">No fee data</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-header">
+          <span class="card-title">Pending Sync</span>
+        </div>
+        <div class="card-body" id="dash-sync-status">
+          <div class="text-muted">All data synced</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== STUDENTS ===== -->
+    <div class="page" id="page-students">
+      <div class="flex gap-8 mb-16 items-center justify-between">
+        <div class="search-bar" style="flex:1;max-width:300px">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search students..." id="studentSearch" oninput="renderStudents()"/>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('student-modal')">+ Add Student</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All Students</span>
+          <span class="text-muted" id="student-count">0 students</span>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Name</th><th>Class</th><th>Gender</th><th>Parent Contact</th><th>Fee Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="studentTable"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No students yet. Add one above.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== ATTENDANCE ===== -->
+    <div class="page" id="page-attendance">
+      <div class="flex gap-8 mb-16 items-center justify-between">
+        <div class="flex gap-8 items-center">
+          <select id="attClass" onchange="loadAttendance()" style="width:140px">
+            <option value="">All Classes</option>
+          </select>
+          <input type="date" id="attDate" onchange="loadAttendance()" style="width:150px"/>
+        </div>
+        <div class="flex gap-8">
+          <span class="badge badge-green" id="att-present-count">Present: 0</span>
+          <span class="badge badge-red" id="att-absent-count">Absent: 0</span>
+          <span class="badge badge-yellow" id="att-late-count">Late: 0</span>
+          <button class="btn btn-primary" onclick="saveAttendance()">Save Attendance</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Mark Attendance</span>
+          <div class="flex gap-8">
+            <button class="btn btn-sm btn-outline" onclick="markAll('present')">All Present</button>
+            <button class="btn btn-sm btn-outline" onclick="markAll('absent')">All Absent</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>#</th><th>Student Name</th><th>Class</th><th>Status</th><th>Note</th></tr></thead>
+          <tbody id="attendanceTable"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Select a class and date above</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Attendance History</span></div>
+        <table>
+          <thead><tr><th>Date</th><th>Class</th><th>Present</th><th>Absent</th><th>Late</th><th>Rate</th></tr></thead>
+          <tbody id="attHistoryTable"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px">No records yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== GRADES ===== -->
+    <div class="page" id="page-grades">
+      <div class="flex gap-8 mb-16 items-center justify-between">
+        <div class="flex gap-8">
+          <select id="gradeClass" onchange="loadGrades()" style="width:140px">
+            <option value="">Select Class</option>
+          </select>
+          <select id="gradeSubject" onchange="loadGrades()" style="width:150px">
+            <option value="">Select Subject</option>
+            <option>Mathematics</option>
+            <option>English</option>
+            <option>Science</option>
+            <option>Social Studies</option>
+            <option>ICT</option>
+            <option>French</option>
+          </select>
+          <select id="gradeTerm" onchange="loadGrades()" style="width:120px">
+            <option value="Term 1">Term 1</option>
+            <option value="Term 2">Term 2</option>
+            <option value="Term 3">Term 3</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="saveGrades()">Save Grades</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Enter / View Grades</span>
+          <span class="text-muted" id="grade-avg-label"></span>
+        </div>
+        <table>
+          <thead><tr><th>Student</th><th>CA Score (40)</th><th>Exam Score (60)</th><th>Total</th><th>Grade</th><th>Remark</th></tr></thead>
+          <tbody id="gradesTable"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Select class and subject</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== FEES ===== -->
+    <div class="page" id="page-fees">
+      <div class="flex gap-8 mb-16 items-center justify-between">
+        <div class="search-bar" style="flex:1;max-width:280px">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search student..." id="feeSearch" oninput="renderFees()"/>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('fee-modal')">+ Record Payment</button>
+      </div>
+
+      <div class="stats-grid" style="margin-bottom:16px">
+        <div class="stat-card">
+          <div class="stat-label">Total Expected</div>
+          <div class="stat-value" id="fee-expected">Le 0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Collected</div>
+          <div class="stat-value color-green" id="fee-collected">Le 0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Outstanding</div>
+          <div class="stat-value color-red" id="fee-outstanding">Le 0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Collection Rate</div>
+          <div class="stat-value color-accent" id="fee-rate">0%</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Payment Records</span></div>
+        <table>
+          <thead><tr><th>Student</th><th>Class</th><th>Term</th><th>Amount Due</th><th>Amount Paid</th><th>Date</th><th>Status</th><th>Receipt</th></tr></thead>
+          <tbody id="feeTable"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No payment records yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== TEACHERS ===== -->
+    <div class="page" id="page-teachers">
+      <div class="flex gap-8 mb-16 items-center justify-between">
+        <div class="search-bar" style="flex:1;max-width:280px">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search teachers..." id="teacherSearch" oninput="renderTeachers()"/>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('teacher-modal')">+ Add Teacher</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Teaching Staff</span>
+          <span class="text-muted" id="teacher-count">0 teachers</span>
+        </div>
+        <table>
+          <thead><tr><th>Name</th><th>Subject(s)</th><th>Class</th><th>Phone</th><th>Qualification</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="teacherTable"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No teachers yet. Add one above.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== REPORTS ===== -->
+    <div class="page" id="page-reports">
+      <div class="tabs">
+        <div class="tab active" onclick="switchReportTab('summary', this)">Summary</div>
+        <div class="tab" onclick="switchReportTab('attendance-report', this)">Attendance Report</div>
+        <div class="tab" onclick="switchReportTab('grade-report', this)">Grade Report</div>
+        <div class="tab" onclick="switchReportTab('fee-report', this)">Fee Report</div>
+      </div>
+
+      <div id="report-summary">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Enrolled Students</div><div class="stat-value" id="rep-students">0</div></div>
+          <div class="stat-card"><div class="stat-label">Avg Attendance</div><div class="stat-value color-green" id="rep-att">—</div></div>
+          <div class="stat-card"><div class="stat-label">Avg Grade</div><div class="stat-value color-blue" id="rep-grade">—</div></div>
+          <div class="stat-card"><div class="stat-label">Fee Collection</div><div class="stat-value color-accent" id="rep-fee-rate">—</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">School Performance Overview</span>
+            <button class="btn btn-sm btn-outline" onclick="exportReport()">📥 Export CSV</button>
+          </div>
+          <div class="card-body" id="report-overview-body">
+            <div class="text-muted">Add students and data to see reports</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="report-attendance-report" style="display:none">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Attendance Report by Class</span></div>
+          <table>
+            <thead><tr><th>Class</th><th>Total Days</th><th>Avg Present</th><th>Avg Absent</th><th>Avg Rate</th></tr></thead>
+            <tbody id="rep-att-table"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">No attendance data</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="report-grade-report" style="display:none">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Grade Report by Subject</span></div>
+          <table>
+            <thead><tr><th>Subject</th><th>Class</th><th>Students</th><th>Avg Score</th><th>Highest</th><th>Lowest</th><th>Pass Rate</th></tr></thead>
+            <tbody id="rep-grade-table"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No grade data</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="report-fee-report" style="display:none">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Fee Report by Class</span></div>
+          <table>
+            <thead><tr><th>Class</th><th>Students</th><th>Expected</th><th>Collected</th><th>Outstanding</th><th>Rate</th></tr></thead>
+            <tbody id="rep-fee-table"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No fee data</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== NOTIFICATIONS ===== -->
+    <div class="page" id="page-notifications">
+      <div class="flex gap-8 mb-16 items-center justify-between">
+        <h3 style="font-size:15px;font-weight:600">Send Notifications</h3>
+        <button class="btn btn-primary" onclick="openModal('notif-modal')">+ New Notification</button>
+      </div>
+
+      <div class="card mb-16">
+        <div class="card-header"><span class="card-title">Quick Alerts</span></div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <button class="btn btn-outline" onclick="quickAlert('exam')">📝 Exam Reminder</button>
+            <button class="btn btn-outline" onclick="quickAlert('fee')">💰 Fee Due Alert</button>
+            <button class="btn btn-outline" onclick="quickAlert('absent')">⚠️ Absence Alert</button>
+            <button class="btn btn-outline" onclick="quickAlert('meeting')">📅 Meeting Notice</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Notification Log</span></div>
+        <table>
+          <thead><tr><th>Date</th><th>Type</th><th>Message</th><th>Recipients</th><th>Status</th></tr></thead>
+          <tbody id="notifTable"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">No notifications sent yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== SETTINGS ===== -->
+    <div class="page" id="page-settings">
+      <div class="card mb-16">
+        <div class="card-header"><span class="card-title">School Information</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group"><label>School Name</label><input type="text" id="set-school-name" placeholder="e.g. ABC Primary School"/></div>
+            <div class="form-group"><label>Location</label><input type="text" id="set-location" placeholder="e.g. Freetown, Western Area"/></div>
+            <div class="form-group"><label>Principal Name</label><input type="text" id="set-principal" placeholder="Principal's full name"/></div>
+            <div class="form-group"><label>Phone Number</label><input type="tel" id="set-phone" placeholder="+232..."/></div>
+            <div class="form-group"><label>Current Term</label>
+              <select id="set-term"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select>
+            </div>
+            <div class="form-group"><label>Academic Year</label><input type="text" id="set-year" placeholder="e.g. 2025/2026"/></div>
+            <div class="form-group full"><label>Term Fee Amount (Le)</label><input type="number" id="set-fee" placeholder="e.g. 150000"/></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:14px" onclick="saveSettings()">Save Settings</button>
+        </div>
+      </div>
+
+      <div class="card mb-16">
+        <div class="card-header"><span class="card-title">Google Sheets Sync</span></div>
+        <div class="card-body">
+          <div class="form-group" style="margin-bottom:12px">
+            <label>Google Apps Script URL</label>
+            <input type="url" id="set-gsheet-url" placeholder="https://script.google.com/macros/s/.../exec"/>
+          </div>
+          <div class="flex gap-8">
+            <button class="btn btn-primary" onclick="saveGSheetURL()">Save URL</button>
+            <button class="btn btn-outline" onclick="testConnection()">Test Connection</button>
+            <button class="btn btn-outline" onclick="syncAll()">Sync Now</button>
+          </div>
+          <div id="conn-result" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Data Management</span></div>
+        <div class="card-body">
+          <div class="flex gap-8">
+            <button class="btn btn-outline" onclick="exportAllData()">📥 Export All Data</button>
+            <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑 Clear All Local Data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+</div><!-- end main -->
+
+<!-- ===== MODALS ===== -->
+
+<!-- Student Modal -->
+<div class="modal-overlay" id="student-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add / Edit Student</span>
+      <button class="modal-close" onclick="closeModal('student-modal')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>First Name *</label><input type="text" id="s-fname" placeholder="First name"/></div>
+      <div class="form-group"><label>Last Name *</label><input type="text" id="s-lname" placeholder="Last name"/></div>
+      <div class="form-group"><label>Class *</label>
+        <select id="s-class">
+          <option value="">Select class</option>
+          <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+          <option>SSS 1</option><option>SSS 2</option><option>SSS 3</option>
+          <option>Primary 1</option><option>Primary 2</option><option>Primary 3</option>
+          <option>Primary 4</option><option>Primary 5</option><option>Primary 6</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Gender</label>
+        <select id="s-gender"><option value="">Select</option><option>Male</option><option>Female</option></select>
+      </div>
+      <div class="form-group"><label>Date of Birth</label><input type="date" id="s-dob"/></div>
+      <div class="form-group"><label>Parent/Guardian Name</label><input type="text" id="s-parent" placeholder="Parent name"/></div>
+      <div class="form-group"><label>Parent Phone</label><input type="tel" id="s-phone" placeholder="+232..."/></div>
+      <div class="form-group"><label>Address</label><input type="text" id="s-address" placeholder="Home address"/></div>
+    </div>
+    <input type="hidden" id="s-edit-id"/>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal('student-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStudent()">Save Student</button>
+    </div>
+  </div>
+</div>
+
+<!-- Teacher Modal -->
+<div class="modal-overlay" id="teacher-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add / Edit Teacher</span>
+      <button class="modal-close" onclick="closeModal('teacher-modal')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>First Name *</label><input type="text" id="t-fname" placeholder="First name"/></div>
+      <div class="form-group"><label>Last Name *</label><input type="text" id="t-lname" placeholder="Last name"/></div>
+      <div class="form-group"><label>Subject(s)</label><input type="text" id="t-subject" placeholder="e.g. Maths, English"/></div>
+      <div class="form-group"><label>Class Assigned</label>
+        <select id="t-class">
+          <option value="">Select class</option>
+          <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+          <option>SSS 1</option><option>SSS 2</option><option>SSS 3</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Phone Number</label><input type="tel" id="t-phone" placeholder="+232..."/></div>
+      <div class="form-group"><label>Qualification</label><input type="text" id="t-qual" placeholder="e.g. B.Ed, Dip.Ed"/></div>
+    </div>
+    <input type="hidden" id="t-edit-id"/>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal('teacher-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTeacher()">Save Teacher</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fee Modal -->
+<div class="modal-overlay" id="fee-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Record Fee Payment</span>
+      <button class="modal-close" onclick="closeModal('fee-modal')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full"><label>Student *</label>
+        <select id="f-student"><option value="">Select student</option></select>
+      </div>
+      <div class="form-group"><label>Term</label>
+        <select id="f-term"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select>
+      </div>
+      <div class="form-group"><label>Amount Due (Le)</label><input type="number" id="f-due" placeholder="0"/></div>
+      <div class="form-group"><label>Amount Paid (Le)</label><input type="number" id="f-paid" placeholder="0"/></div>
+      <div class="form-group"><label>Payment Date</label><input type="date" id="f-date"/></div>
+      <div class="form-group"><label>Payment Method</label>
+        <select id="f-method"><option>Cash</option><option>Orange Money</option><option>Afrimoney</option><option>Bank Transfer</option></select>
+      </div>
+      <div class="form-group full"><label>Notes</label><textarea id="f-notes" placeholder="Any notes..."></textarea></div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal('fee-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveFee()">Save Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notification Modal -->
+<div class="modal-overlay" id="notif-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Send Notification</span>
+      <button class="modal-close" onclick="closeModal('notif-modal')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>Type</label>
+        <select id="n-type">
+          <option>General</option><option>Exam</option><option>Fee</option>
+          <option>Absence</option><option>Meeting</option><option>Emergency</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Recipients</label>
+        <select id="n-recipients">
+          <option>All Parents</option><option>All Teachers</option>
+          <option>Ministry</option><option>Specific Class</option>
+        </select>
+      </div>
+      <div class="form-group full"><label>Message *</label>
+        <textarea id="n-message" placeholder="Type your notification message..."></textarea>
+      </div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal('notif-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="sendNotification()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(() => console.log('SW registered'))
+        .catch(e => console.log('SW error:', e));
+    });
+  }
+</script>
+</body>
+</html>

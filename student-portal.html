@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EduTrack SL — Student Portal</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#1a3a5c"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --navy:   #1a3a5c;
+    --navy2:  #24527a;
+    --accent: #f0a500;
+    --green:  #2ecc71;
+    --red:    #e74c3c;
+    --blue:   #3498db;
+    --purple: #9b59b6;
+    --orange: #e67e22;
+    --bg:     #f0f4f8;
+    --card:   #ffffff;
+    --text:   #1a2535;
+    --muted:  #6b7a8d;
+    --border: #e2e8f0;
+    --font:   'DM Sans', sans-serif;
+    --mono:   'DM Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--navy);
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .topbar-brand { display: flex; align-items: center; gap: 10px; }
+  .brand-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; color: var(--navy); }
+  .brand-name { font-size: 16px; font-weight: 600; }
+  .brand-sub  { font-size: 11px; color: rgba(255,255,255,0.55); }
+  .back-btn { background: rgba(255,255,255,0.12); border: none; color: #fff;
+    padding: 6px 14px; border-radius: 6px; font-family: var(--font); font-size: 12px; cursor: pointer; }
+  .back-btn:hover { background: rgba(255,255,255,0.2); }
+
+  /* ── MAIN WRAPPER ── */
+  .wrapper { max-width: 520px; margin: 0 auto; padding: 24px 16px 40px; }
+
+  /* ── LOGIN CARD ── */
+  #login-screen { display: block; }
+  #result-screen { display: none; }
+
+  .login-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 36px 32px;
+    box-shadow: 0 4px 24px rgba(26,58,92,0.10);
+    text-align: center;
+    margin-top: 32px;
+  }
+  .login-icon { font-size: 52px; margin-bottom: 12px; }
+  .login-title { font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  .login-subtitle { font-size: 14px; color: var(--muted); margin-bottom: 28px; line-height: 1.5; }
+
+  .input-wrap { position: relative; margin-bottom: 16px; }
+  .input-wrap input {
+    width: 100%; padding: 14px 16px;
+    font-family: var(--mono); font-size: 16px; font-weight: 500;
+    letter-spacing: 2px; text-transform: uppercase; text-align: center;
+    border: 2px solid var(--border); border-radius: 10px;
+    color: var(--navy); background: #f8fafc;
+    transition: border 0.2s, box-shadow 0.2s;
+  }
+  .input-wrap input:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(26,58,92,0.10); background: #fff; }
+  .input-wrap input::placeholder { letter-spacing: 1px; color: #b0bec5; font-size: 13px; text-transform: none; }
+
+  .lookup-btn {
+    width: 100%; padding: 14px;
+    background: var(--navy); color: #fff;
+    border: none; border-radius: 10px;
+    font-family: var(--font); font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .lookup-btn:hover { background: var(--navy2); }
+  .lookup-btn:disabled { background: #b0bec5; cursor: not-allowed; }
+
+  .error-msg { margin-top: 14px; color: var(--red); font-size: 13px; display: none; }
+  .loading-msg { margin-top: 14px; color: var(--muted); font-size: 13px; display: none; }
+
+  /* ── STUDENT RESULT ── */
+  .student-header {
+    background: var(--navy);
+    border-radius: 14px;
+    padding: 22px 20px;
+    color: #fff;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .student-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--accent); display: flex; align-items: center;
+    justify-content: center; font-size: 22px; font-weight: 700;
+    color: var(--navy); flex-shrink: 0;
+  }
+  .student-name  { font-size: 18px; font-weight: 700; }
+  .student-meta  { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 2px; }
+  .student-adm   { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-top: 4px; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 4px; background: var(--card); border-radius: 10px;
+    padding: 4px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .tab { flex: 1; padding: 9px 4px; border: none; background: transparent;
+    font-family: var(--font); font-size: 12px; font-weight: 500; color: var(--muted);
+    border-radius: 7px; cursor: pointer; transition: all 0.15s; }
+  .tab.active { background: var(--navy); color: #fff; }
+
+  /* ── SECTION ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── GRADE CARD ── */
+  .term-block { background: var(--card); border-radius: 12px; margin-bottom: 12px;
+    overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .term-header { background: var(--navy); color: #fff; padding: 10px 16px;
+    font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+  .term-avg { font-size: 11px; background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 20px; }
+
+  .subject-row { display: flex; align-items: center; padding: 11px 16px;
+    border-bottom: 1px solid var(--border); gap: 10px; }
+  .subject-row:last-child { border-bottom: none; }
+  .subject-name { flex: 1; font-size: 13px; font-weight: 500; }
+  .score-pill { display: flex; gap: 6px; align-items: center; }
+  .score-box { background: var(--bg); border-radius: 6px; padding: 3px 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .score-box span { color: var(--text); font-weight: 600; }
+  .grade-badge { width: 34px; height: 34px; border-radius: 8px; display: flex;
+    align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .grade-A { background: #d4edda; color: #155724; }
+  .grade-B { background: #cce5ff; color: #004085; }
+  .grade-C { background: #fff3cd; color: #856404; }
+  .grade-D { background: #fde8d8; color: #7d3c07; }
+  .grade-E { background: #f8d7da; color: #721c24; }
+  .grade-F { background: #f5c6cb; color: #491217; }
+
+  /* ── ATTENDANCE SUMMARY ── */
+  .att-summary { background: var(--card); border-radius: 12px; padding: 16px;
+    margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .att-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+  .att-stat { text-align: center; padding: 12px 8px; border-radius: 10px; }
+  .att-stat.present { background: #d4edda; }
+  .att-stat.absent  { background: #f8d7da; }
+  .att-stat.late    { background: #fff3cd; }
+  .att-stat-val { font-size: 24px; font-weight: 700; }
+  .att-stat-lbl { font-size: 11px; font-weight: 500; margin-top: 2px; }
+  .att-stat.present .att-stat-val { color: #155724; }
+  .att-stat.absent  .att-stat-val { color: #721c24; }
+  .att-stat.late    .att-stat-val { color: #856404; }
+  .progress-wrap { background: var(--border); border-radius: 10px; height: 10px; overflow: hidden; margin-bottom: 6px; }
+  .progress-bar { height: 100%; border-radius: 10px; transition: width 0.6s ease; }
+
+  /* ── FEE STATUS ── */
+  .fee-card { background: var(--card); border-radius: 12px; padding: 16px;
+    margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .fee-row { display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .fee-row:last-child { border-bottom: none; }
+  .fee-label { color: var(--muted); }
+  .fee-value { font-weight: 600; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-green  { background: #d4edda; color: #155724; }
+  .badge-red    { background: #f8d7da; color: #721c24; }
+  .badge-yellow { background: #fff3cd; color: #856404; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 32px 16px; color: var(--muted); }
+  .empty-icon { font-size: 36px; margin-bottom: 8px; }
+  .empty-text { font-size: 14px; }
+
+  /* ── LOGOUT ── */
+  .logout-btn { width: 100%; padding: 12px; background: transparent;
+    border: 1.5px solid var(--border); border-radius: 10px; color: var(--muted);
+    font-family: var(--font); font-size: 13px; cursor: pointer; margin-top: 8px; }
+  .logout-btn:hover { background: var(--bg); color: var(--red); border-color: var(--red); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 400px) {
+    .login-card { padding: 24px 18px; }
+    .wrapper { padding: 16px 12px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-icon">E</div>
+    <div>
+      <div class="brand-name">EduTrack SL</div>
+      <div class="brand-sub">Student Portal</div>
+    </div>
+  </div>
+  <a href="index.html"><button class="back-btn">🔒 Admin</button></a>
+</div>
+
+<!-- WRAPPER -->
+<div class="wrapper">
+
+  <!-- ── LOGIN SCREEN ── -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="login-icon">🎓</div>
+      <div class="login-title">Student Portal</div>
+      <div class="login-subtitle">Enter your Admission Number to view your grades, attendance, and fee status.</div>
+
+      <div class="input-wrap">
+        <input type="text" id="admInput" placeholder="e.g. ADM1780629926174"
+          maxlength="30" autocomplete="off" autocorrect="off" spellcheck="false"
+          onkeydown="if(event.key==='Enter') lookupStudent()"/>
+      </div>
+      <button class="lookup-btn" id="lookupBtn" onclick="lookupStudent()">View My Results</button>
+
+      <div class="error-msg" id="errorMsg">⚠️ Admission number not found. Please check and try again.</div>
+      <div class="loading-msg" id="loadingMsg">🔄 Looking up your record...</div>
+    </div>
+  </div>
+
+  <!-- ── RESULT SCREEN ── -->
+  <div id="result-screen">
+
+    <!-- Student header -->
+    <div class="student-header">
+      <div class="student-avatar" id="res-avatar">S</div>
+      <div>
+        <div class="student-name"  id="res-name">—</div>
+        <div class="student-meta" id="res-meta">—</div>
+        <div class="student-adm"  id="res-adm">—</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('grades', this)">📝 Grades</button>
+      <button class="tab" onclick="switchTab('attendance', this)">✅ Attendance</button>
+      <button class="tab" onclick="switchTab('fees', this)">💰 Fees</button>
+    </div>
+
+    <!-- GRADES SECTION -->
+    <div class="section active" id="sec-grades">
+      <div id="grades-content"><div class="empty"><div class="empty-icon">📝</div><div class="empty-text">No grade records found</div></div></div>
+    </div>
+
+    <!-- ATTENDANCE SECTION -->
+    <div class="section" id="sec-attendance">
+      <div id="attendance-content"><div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No attendance records found</div></div></div>
+    </div>
+
+    <!-- FEES SECTION -->
+    <div class="section" id="sec-fees">
+      <div id="fees-content"><div class="empty"><div class="empty-icon">💰</div><div class="empty-text">No fee records found</div></div></div>
+    </div>
+
+    <button class="logout-btn" onclick="logout()">← Look Up Another Student</button>
+  </div>
+
+</div><!-- end wrapper -->
+
+<script>
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxyr8fNJjBf3psJUtohBYZan9Doj2oz9NrhNIaLIrgMOgobduNY7aCz-1n_Ehi2x0NT/exec';
+
+// ── TAB SWITCH ──────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sec-' + name).classList.add('active');
+}
+
+// ── LOOKUP ──────────────────────────────────────────────────
+async function lookupStudent() {
+  const admRaw = document.getElementById('admInput').value.trim().toUpperCase();
+  if (!admRaw) return;
+
+  const btn  = document.getElementById('lookupBtn');
+  const err  = document.getElementById('errorMsg');
+  const load = document.getElementById('loadingMsg');
+
+  err.style.display  = 'none';
+  load.style.display = 'block';
+  btn.disabled = true;
+
+  try {
+    // ── Try local IndexedDB first ──
+    let student = await localLookup(admRaw);
+    let grades  = [];
+    let attRecs = [];
+    let feeRecs = [];
+
+    if (student) {
+      grades  = await localGetAll('grades');
+      attRecs = await localGetAll('attendance');
+      feeRecs = await localGetAll('fees');
+      grades  = grades.filter(g => g.studentId == student.id);
+      attRecs = attRecs.filter(a => a.studentId == student.id);
+      feeRecs = feeRecs.filter(f => f.studentId == student.id);
+    } else {
+      // ── Fallback: fetch from Google Sheets ──
+      const [studentsData, gradesData, attData, feesData] = await Promise.all([
+        fetchStore('students'),
+        fetchStore('grades'),
+        fetchStore('attendance'),
+        fetchStore('fees'),
+      ]);
+
+      student = (studentsData || []).find(s =>
+        String(s['Admission No'] || s.admissionNo || '').toUpperCase() === admRaw
+      );
+
+      if (student) {
+        const sid = student['ID'] || student.id;
+        grades  = (gradesData  || []).filter(g => String(g['Student ID'] || g.studentId) == String(sid));
+        attRecs = (attData     || []).filter(a => String(a['Student ID'] || a.studentId) == String(sid));
+        feeRecs = (feesData    || []).filter(f => String(f['Student ID'] || f.studentId) == String(sid));
+      }
+    }
+
+    load.style.display = 'none';
+    btn.disabled = false;
+
+    if (!student) {
+      err.style.display = 'block';
+      return;
+    }
+
+    renderResult(student, grades, attRecs, feeRecs);
+
+  } catch (e) {
+    load.style.display = 'none';
+    btn.disabled = false;
+    err.textContent = '❌ Error: ' + e.message;
+    err.style.display = 'block';
+    console.error(e);
+  }
+}
+
+// ── LOCAL INDEXEDDB ─────────────────────────────────────────
+let localDB;
+
+function openLocalDB() {
+  return new Promise((res, rej) => {
+    if (localDB) return res(localDB);
+    const r = indexedDB.open('EduTrackSL', 1);
+    r.onsuccess  = e => { localDB = e.target.result; res(localDB); };
+    r.onerror    = () => res(null);
+    r.onupgradeneeded = () => res(null);
+  });
+}
+
+async function localGetAll(store) {
+  const db = await openLocalDB();
+  if (!db || !db.objectStoreNames.contains(store)) return [];
+  return new Promise((res, rej) => {
+    const tx  = db.transaction([store], 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => res(req.result);
+    req.onerror   = () => res([]);
+  });
+}
+
+async function localLookup(admNo) {
+  const students = await localGetAll('students');
+  return students.find(s =>
+    String(s.admissionNo || '').toUpperCase() === admNo
+  ) || null;
+}
+
+// ── FETCH FROM GOOGLE SHEETS ─────────────────────────────────
+async function fetchStore(store) {
+  try {
+    const res = await fetch(SHEETS_URL + '?store=' + store, { redirect: 'follow' });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (e) {
+    return [];
+  }
+}
+
+// ── RENDER RESULT ────────────────────────────────────────────
+function renderResult(student, grades, attRecs, feeRecs) {
+  // Header
+  const name = student.fullName || student['Full Name'] || 'Student';
+  const cls  = student.class    || student['Class']     || '—';
+  const adm  = student.admissionNo || student['Admission No'] || '—';
+  const initials = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+  document.getElementById('res-avatar').textContent = initials;
+  document.getElementById('res-name').textContent   = name;
+  document.getElementById('res-meta').textContent   = `Class: ${cls}  •  ${student.school || student['School'] || 'School'}`;
+  document.getElementById('res-adm').textContent    = adm;
+
+  renderGrades(grades);
+  renderAttendance(attRecs);
+  renderFees(feeRecs);
+
+  document.getElementById('login-screen').style.display  = 'none';
+  document.getElementById('result-screen').style.display = 'block';
+}
+
+// ── GRADES ───────────────────────────────────────────────────
+function renderGrades(grades) {
+  const el = document.getElementById('grades-content');
+  if (!grades.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📝</div><div class="empty-text">No grade records found</div></div>';
+    return;
+  }
+
+  // Group by term
+  const byTerm = {};
+  grades.forEach(g => {
+    const term    = g.term || g['Term'] || 'Unknown';
+    const subject = g.subject || g['Subject'] || '—';
+    const ca      = parseFloat(g.ca   || g['CA']   || 0);
+    const exam    = parseFloat(g.exam || g['Exam'] || 0);
+    const total   = parseFloat(g.total || g['Total'] || (ca + exam));
+    if (!byTerm[term]) byTerm[term] = [];
+    byTerm[term].push({ subject, ca, exam, total });
+  });
+
+  el.innerHTML = Object.entries(byTerm).map(([term, subjects]) => {
+    const avg = subjects.length
+      ? (subjects.reduce((a, s) => a + s.total, 0) / subjects.length).toFixed(1)
+      : '—';
+    const rows = subjects.map(s => {
+      const gInfo = getGradeInfo(s.total);
+      return `<div class="subject-row">
+        <div class="subject-name">${s.subject}</div>
+        <div class="score-pill">
+          <div class="score-box">CA <span>${s.ca}</span></div>
+          <div class="score-box">EX <span>${s.exam}</span></div>
+          <div class="score-box">Tot <span>${s.total}</span></div>
+        </div>
+        <div class="grade-badge grade-${gInfo.letter[0]}" title="${gInfo.remark}">${gInfo.letter}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="term-block">
+      <div class="term-header">
+        <span>${term}</span>
+        <span class="term-avg">Avg: ${avg}</span>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
+}
+
+function getGradeInfo(total) {
+  if (total >= 80) return { letter: 'A1', remark: 'Excellent' };
+  if (total >= 70) return { letter: 'B2', remark: 'Very Good' };
+  if (total >= 60) return { letter: 'B3', remark: 'Good' };
+  if (total >= 55) return { letter: 'C4', remark: 'Credit' };
+  if (total >= 50) return { letter: 'C5', remark: 'Credit' };
+  if (total >= 45) return { letter: 'C6', remark: 'Credit' };
+  if (total >= 40) return { letter: 'D7', remark: 'Pass' };
+  if (total >= 35) return { letter: 'E8', remark: 'Weak Pass' };
+  return { letter: 'F9', remark: 'Fail' };
+}
+
+// ── ATTENDANCE ───────────────────────────────────────────────
+function renderAttendance(records) {
+  const el = document.getElementById('attendance-content');
+  if (!records.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No attendance records found</div></div>';
+    return;
+  }
+
+  const present = records.filter(r => (r.status || r['Status'] || '').toLowerCase() === 'present').length;
+  const absent  = records.filter(r => (r.status || r['Status'] || '').toLowerCase() === 'absent').length;
+  const late    = records.filter(r => (r.status || r['Status'] || '').toLowerCase() === 'late').length;
+  const total   = records.length;
+  const rate    = total ? Math.round((present / total) * 100) : 0;
+  const barColor = rate >= 80 ? 'var(--green)' : rate >= 60 ? 'var(--accent)' : 'var(--red)';
+
+  // Recent 10 records
+  const recent = [...records]
+    .sort((a, b) => (b.date || b['Date'] || '').localeCompare(a.date || a['Date'] || ''))
+    .slice(0, 10);
+
+  const recentRows = recent.map(r => {
+    const status = (r.status || r['Status'] || '').toLowerCase();
+    const date   = r.date || r['Date'] || '—';
+    const badge  = status === 'present' ? 'badge-green' : status === 'absent' ? 'badge-red' : 'badge-yellow';
+    return `<div class="fee-row">
+      <span class="fee-label">${date}</span>
+      <span class="badge ${badge}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="att-summary">
+      <div class="att-grid">
+        <div class="att-stat present">
+          <div class="att-stat-val">${present}</div>
+          <div class="att-stat-lbl">Present</div>
+        </div>
+        <div class="att-stat absent">
+          <div class="att-stat-val">${absent}</div>
+          <div class="att-stat-lbl">Absent</div>
+        </div>
+        <div class="att-stat late">
+          <div class="att-stat-val">${late}</div>
+          <div class="att-stat-lbl">Late</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+        <span style="color:var(--muted)">Attendance Rate</span>
+        <strong style="color:${barColor}">${rate}%</strong>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar" style="width:${rate}%;background:${barColor}"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">${total} total days recorded</div>
+    </div>
+
+    <div class="fee-card">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">Recent Records</div>
+      ${recentRows}
+    </div>`;
+}
+
+// ── FEES ──────────────────────────────────────────────────────
+function renderFees(feeRecs) {
+  const el = document.getElementById('fees-content');
+  if (!feeRecs.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">💰</div><div class="empty-text">No fee records found</div></div>';
+    return;
+  }
+
+  const totalDue  = feeRecs.reduce((a, f) => a + parseFloat(f.amountDue  || f['Amount Due']  || 0), 0);
+  const totalPaid = feeRecs.reduce((a, f) => a + parseFloat(f.amountPaid || f['Amount Paid'] || 0), 0);
+  const balance   = totalDue - totalPaid;
+  const rate      = totalDue ? Math.round((totalPaid / totalDue) * 100) : 0;
+  const barColor  = rate >= 100 ? 'var(--green)' : rate >= 50 ? 'var(--accent)' : 'var(--red)';
+  const statusBadge = balance <= 0
+    ? '<span class="badge badge-green">✅ Fully Paid</span>'
+    : totalPaid > 0
+    ? '<span class="badge badge-yellow">⏳ Partially Paid</span>'
+    : '<span class="badge badge-red">❌ Unpaid</span>';
+
+  const termRows = feeRecs.map(f => {
+    const due  = parseFloat(f.amountDue  || f['Amount Due']  || 0);
+    const paid = parseFloat(f.amountPaid || f['Amount Paid'] || 0);
+    const term = f.term || f['Term'] || '—';
+    const date = f.date || f['Date'] || '—';
+    const method = f.method || f['Method'] || '—';
+    const receipt = f.receiptNo || f['Receipt No'] || '—';
+    const st = paid >= due ? 'badge-green' : paid > 0 ? 'badge-yellow' : 'badge-red';
+    const stLabel = paid >= due ? 'Paid' : paid > 0 ? 'Partial' : 'Unpaid';
+    return `<div class="fee-card" style="margin-bottom:10px">
+      <div class="fee-row"><span class="fee-label">Term</span><span class="fee-value">${term}</span></div>
+      <div class="fee-row"><span class="fee-label">Amount Due</span><span class="fee-value">Le ${due.toLocaleString()}</span></div>
+      <div class="fee-row"><span class="fee-label">Amount Paid</span><span class="fee-value" style="color:var(--green)">Le ${paid.toLocaleString()}</span></div>
+      <div class="fee-row"><span class="fee-label">Balance</span><span class="fee-value" style="color:${due-paid>0?'var(--red)':'var(--green)'}">Le ${Math.max(0,due-paid).toLocaleString()}</span></div>
+      <div class="fee-row"><span class="fee-label">Payment Date</span><span class="fee-value">${date}</span></div>
+      <div class="fee-row"><span class="fee-label">Method</span><span class="fee-value">${method}</span></div>
+      <div class="fee-row"><span class="fee-label">Receipt No</span><span class="fee-value" style="font-family:var(--mono);font-size:11px">${receipt}</span></div>
+      <div class="fee-row"><span class="fee-label">Status</span><span class="badge ${st}">${stLabel}</span></div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="fee-card">
+      <div class="fee-row"><span class="fee-label">Total Due</span><span class="fee-value">Le ${totalDue.toLocaleString()}</span></div>
+      <div class="fee-row"><span class="fee-label">Total Paid</span><span class="fee-value" style="color:var(--green)">Le ${totalPaid.toLocaleString()}</span></div>
+      <div class="fee-row"><span class="fee-label">Outstanding</span><span class="fee-value" style="color:${balance>0?'var(--red)':'var(--green)'}">Le ${Math.max(0,balance).toLocaleString()}</span></div>
+      <div class="fee-row"><span class="fee-label">Overall Status</span>${statusBadge}</div>
+      <div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+          <span style="color:var(--muted)">Payment Progress</span>
+          <strong style="color:${barColor}">${rate}%</strong>
+        </div>
+        <div class="progress-wrap"><div class="progress-bar" style="width:${rate}%;background:${barColor}"></div></div>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--muted)">Payment History</div>
+    ${termRows}`;
+}
+
+// ── LOGOUT ───────────────────────────────────────────────────
+function logout() {
+  document.getElementById('admInput').value = '';
+  document.getElementById('errorMsg').style.display  = 'none';
+  document.getElementById('loadingMsg').style.display = 'none';
+  document.getElementById('login-screen').style.display  = 'block';
+  document.getElementById('result-screen').style.display = 'none';
+  // Reset tabs
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === 0));
+  document.querySelectorAll('.section').forEach((s, i) => s.classList.toggle('active', i === 0));
+}
+</script>
+</body>
+</html>
